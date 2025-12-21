@@ -1,26 +1,25 @@
+/**
+ * sketch.js
+ * Boundary X Bluetooth Keypad Logic (Micro:bit Compatible)
+ */
+
 // Bluetooth UUIDs for micro:bit UART service
 const UART_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-const UART_RX_CHARACTERISTIC_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
-const UART_TX_CHARACTERISTIC_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+const UART_RX_CHARACTERISTIC_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; // Data to Micro:bit
+const UART_TX_CHARACTERISTIC_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; // Data from Micro:bit
 
 let bluetoothDevice = null;
 let rxCharacteristic = null;
 let isConnected = false;
-let bluetoothStatus = "Disconnected";
+let bluetoothStatus = "연결 대기 중";
 let sentData = ""; 
 
 function setup() {
-  console.log("Setup function called"); 
-  const canvas = createCanvas(30, 30);
-  canvas.parent("p5-container");
+  noCanvas();
 
-  // 1. 블루투스 UI 생성
+  // 1. UI 생성 (Black & White Theme)
   createBluetoothUI();
-
-  // 2. 키패드 UI 생성
   createKeypadUI();
-  
-  // 3. 전송 데이터 표시창 초기화
   displaySentData();
 }
 
@@ -28,7 +27,6 @@ function setup() {
  * 블루투스 연결 UI 생성
  */
 function createBluetoothUI() {
-  console.log("Creating Bluetooth UI"); 
   const statusElement = select("#bluetoothStatus");
   if (statusElement) {
     statusElement.html(`상태: ${bluetoothStatus}`);
@@ -36,11 +34,12 @@ function createBluetoothUI() {
 
   const buttonContainer = select("#bluetooth-control-buttons");
   if (buttonContainer) {
-    const connectButton = createButton("🔗 블루투스 연결").addClass("start-button");
+    // 디자인 시스템 클래스 적용 (.start-button -> Black Pill)
+    const connectButton = createButton("기기 연결").addClass("start-button");
     connectButton.mousePressed(connectBluetooth);
     buttonContainer.child(connectButton);
 
-    const disconnectButton = createButton("❌ 연결 해제").addClass("stop-button");
+    const disconnectButton = createButton("연결 해제").addClass("stop-button");
     disconnectButton.mousePressed(disconnectBluetooth);
     buttonContainer.child(disconnectButton);
   }
@@ -50,16 +49,13 @@ function createBluetoothUI() {
  * 9개 키패드 생성 함수 (1~9)
  */
 function createKeypadUI() {
-  console.log("Creating Keypad UI");
   const keypadContainer = select("#keypad-container");
   
   if (keypadContainer) {
-    // 1부터 9까지 버튼 생성
     for (let i = 1; i <= 9; i++) {
-      let btn = createButton(String(i)); // 버튼 텍스트 1~9
-      btn.addClass("keypad-btn");        // CSS 스타일 적용
+      let btn = createButton(String(i)); 
+      btn.addClass("keypad-btn"); // style.css의 새 스타일 적용
       
-      // 버튼 클릭 시 이벤트
       btn.mousePressed(() => {
         handleKeypadPress(i);
       });
@@ -75,17 +71,13 @@ function createKeypadUI() {
 function handleKeypadPress(number) {
   const dataToSend = String(number);
   
-  // 버튼 클릭 효과 (진동 등) - 모바일에서 지원 시
   if (navigator.vibrate) {
-    navigator.vibrate(50);
+    navigator.vibrate(30); // 햅틱 피드백
   }
 
-  // 데이터 전송
   sendBluetoothData(dataToSend);
   sentData = dataToSend;
   displaySentData();
-  
-  console.log(`Keypad pressed: ${number}`);
 }
 
 /**
@@ -96,10 +88,31 @@ function displaySentData() {
   if (statusContainer) {
     let sentDataDiv = select("#sentDataDisplay");
     if (!sentDataDiv) {
-      sentDataDiv = createDiv(`📨 최근 전송 데이터: ${sentData || "-"}`).id("sentDataDisplay");
+      sentDataDiv = createDiv(`최근 전송 데이터: ${sentData || "-"}`).id("sentDataDisplay");
       sentDataDiv.parent(statusContainer);
     } else {
-      sentDataDiv.html(`📨 최근 전송 데이터: ${sentData || "-"}`);
+      sentDataDiv.html(`최근 전송 데이터: ${sentData || "-"}`);
+    }
+  }
+}
+
+/**
+ * UI 상태 업데이트 (색상 변경)
+ */
+function updateBluetoothStatusUI(type) {
+  const el = select("#bluetoothStatus");
+  if (el) {
+    // 기존 클래스 제거
+    el.removeClass("status-connected");
+    el.removeClass("status-error");
+    
+    el.html(`상태: ${bluetoothStatus}`);
+
+    // 상태별 색상 적용
+    if (type === 'connected') {
+      el.addClass("status-connected");
+    } else if (type === 'error') {
+      el.addClass("status-error");
     }
   }
 }
@@ -110,7 +123,7 @@ function displaySentData() {
 async function connectBluetooth() {
   try {
     bluetoothDevice = await navigator.bluetooth.requestDevice({
-      filters: [{ namePrefix: "ESP" }, { namePrefix: "BBC" }],
+      filters: [{ namePrefix: "BBC micro:bit" }],
       optionalServices: [UART_SERVICE_UUID],
     });
 
@@ -119,12 +132,13 @@ async function connectBluetooth() {
     rxCharacteristic = await service.getCharacteristic(UART_RX_CHARACTERISTIC_UUID);
 
     isConnected = true;
-    bluetoothStatus = `Connected to ${bluetoothDevice.name}`;
+    bluetoothStatus = `${bluetoothDevice.name} 연결됨`;
+    updateBluetoothStatusUI('connected'); // 녹색
   } catch (error) {
     console.error("Bluetooth connection failed:", error);
-    bluetoothStatus = "Connection Failed";
+    bluetoothStatus = "연결 실패 (다시 시도해주세요)";
+    updateBluetoothStatusUI('error'); // 빨강
   }
-  updateBluetoothStatus();
 }
 
 /**
@@ -133,59 +147,35 @@ async function connectBluetooth() {
 function disconnectBluetooth() {
   if (bluetoothDevice && bluetoothDevice.gatt.connected) {
     bluetoothDevice.gatt.disconnect();
-    isConnected = false;
-    bluetoothStatus = "Disconnected";
-    rxCharacteristic = null;
-    bluetoothDevice = null;
-  } else {
-    bluetoothStatus = "Already Disconnected";
   }
-  updateBluetoothStatus();
+  isConnected = false;
+  bluetoothDevice = null;
+  rxCharacteristic = null;
+  
+  bluetoothStatus = "연결 해제됨";
+  updateBluetoothStatusUI('default'); // 회색
 }
 
 /**
- * 블루투스 상태 업데이트
- */
-function updateBluetoothStatus() {
-  const statusElement = select("#bluetoothStatus");
-  if (statusElement) {
-    statusElement.html(`상태: ${bluetoothStatus}`);
-    if (bluetoothStatus.includes("Connected")) {
-      statusElement.style("background-color", "#d0f0fd");
-      statusElement.style("color", "#FE818D");
-    } else {
-      statusElement.style("background-color", "#f9f9f9");
-      statusElement.style("color", "#FE818D");
-    }
-  }
-}
-
-/**
- * 데이터 전송 함수 (라인 엔딩 제거됨)
+ * 데이터 전송 함수 (마이크로비트 호환성 수정)
  */
 async function sendBluetoothData(data) {
   if (!rxCharacteristic || !isConnected) {
-    console.error("Cannot send data: Device not connected.");
-    alert("블루투스가 연결되지 않았습니다. 먼저 연결해주세요!");
+    alert("블루투스가 연결되지 않았습니다.");
     return;
   }
 
   try {
     const encoder = new TextEncoder();
     
-    // [수정됨] 개행 문자(\n) 없이 순수 데이터만 인코딩하여 전송
-    const encodedData = encoder.encode(data); 
+    // [중요 수정] 마이크로비트는 줄바꿈문자(\n)를 받아야 명령 종료로 인식하는 경우가 많음
+    const dataWithDelimiter = `${data}\n`;
     
+    const encodedData = encoder.encode(dataWithDelimiter); 
     await rxCharacteristic.writeValue(encodedData);
-    console.log("Sent:", data);
+    console.log("Sent:", dataWithDelimiter);
   } catch (error) {
     console.error("Error sending data:", error);
-    alert("데이터 전송 실패");
+    // alert("전송 실패"); // 사용자 경험을 위해 alert는 생략 가능
   }
 }
-
-function draw() {
-  // 사용하지 않지만 p5.js 구조상 남겨둠
-}
-
-console.log("Script loaded and running");
