@@ -123,6 +123,7 @@ function updateBluetoothStatusUI(type) {
 async function connectBluetooth() {
   try {
     bluetoothDevice = await navigator.bluetooth.requestDevice({
+      // BBC micro:bit 이름만 검색 (필터 유지)
       filters: [{ namePrefix: "BBC micro:bit" }],
       optionalServices: [UART_SERVICE_UUID],
     });
@@ -157,7 +158,7 @@ function disconnectBluetooth() {
 }
 
 /**
- * 데이터 전송 함수 (마이크로비트 호환성 수정)
+ * 데이터 전송 함수 (라인 엔딩 \n 추가됨)
  */
 async function sendBluetoothData(data) {
   if (!rxCharacteristic || !isConnected) {
@@ -168,7 +169,7 @@ async function sendBluetoothData(data) {
   try {
     const encoder = new TextEncoder();
     
-    // [중요 수정] 마이크로비트는 줄바꿈문자(\n)를 받아야 명령 종료로 인식하는 경우가 많음
+    // [라인 엔딩 추가] 데이터 뒤에 \n을 붙여서 전송
     const dataWithDelimiter = `${data}\n`;
     
     const encodedData = encoder.encode(dataWithDelimiter); 
@@ -176,6 +177,5 @@ async function sendBluetoothData(data) {
     console.log("Sent:", dataWithDelimiter);
   } catch (error) {
     console.error("Error sending data:", error);
-    // alert("전송 실패"); // 사용자 경험을 위해 alert는 생략 가능
   }
 }
