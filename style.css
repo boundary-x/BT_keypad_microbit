@@ -82,10 +82,10 @@ button {
 .status-connected { background-color: #E6F4EA !important; color: var(--success) !important; border-color: var(--success) !important; }
 .status-error { background-color: #FCE8E6 !important; color: var(--danger) !important; border-color: var(--danger) !important; }
 
-/* --- NEW: Keypad UI --- */
+/* --- Keypad UI --- */
 .display-screen {
     background: #222;
-    color: #0f0; /* Retro terminal green */
+    color: #0f0;
     padding: 1.5rem;
     border-radius: 12px;
     margin-bottom: 1.5rem;
@@ -101,7 +101,7 @@ button {
 
 .keypad-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr); /* 3 Columns */
+    grid-template-columns: repeat(3, 1fr);
     gap: 12px;
 }
 
@@ -111,12 +111,12 @@ button {
     color: var(--text-main);
     font-size: 1.5rem !important;
     font-weight: 700;
-    aspect-ratio: 1.4 / 1; /* Slight rectangle */
-    border-radius: 12px !important; /* Less rounded than pills */
+    aspect-ratio: 1.4 / 1;
+    border-radius: 12px !important;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 0px rgba(0,0,0,0.1); /* 3D effect */
+    box-shadow: 0 4px 0px rgba(0,0,0,0.1);
 }
 
 .key-button:active {
@@ -125,8 +125,116 @@ button {
     background: #eee;
 }
 
-/* Footer */
-footer { background: #000000; color: #fff; padding: 4rem 5vw; margin-top: auto; font-size: 0.9rem; }
-.footer-logo { font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; }
-.slogan { color: #ccc; margin-bottom: 1.5rem; word-break: keep-all; }
-.copyright { margin-top: 0.8rem; color: #666; font-size: 0.8rem; }
+/* Detailed Footer (Restored) */
+footer {
+  background-color: #000000;
+  color: #FFFFFF;
+  padding: 4rem 5vw 4rem;
+  border-top: 1px solid #222;
+  margin-top: auto;
+  font-size: 0.9rem;
+}
+
+.footer-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.footer-top {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4rem;
+}
+
+.footer-info {
+  flex: 1;
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+}
+
+.footer-logo {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #FFFFFF;
+}
+
+.slogan {
+  font-size: 0.95rem;
+  color: #CCCCCC;
+  font-weight: 400;
+  font-style: normal;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+address {
+  font-style: normal;
+  color: #888;
+  line-height: 1.6;
+}
+
+.copyright {
+  margin-top: 0.8rem;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.footer-links {
+  display: flex;
+  gap: 4rem;
+  flex-wrap: wrap;
+}
+
+.link-column h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 1.2rem;
+}
+
+.link-column ul {
+  list-style: none;
+  padding: 0;
+}
+
+.link-column li {
+  margin-bottom: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.link-column a {
+  text-decoration: none;
+  color: #CCCCCC;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.link-column a:hover {
+  color: #FFFFFF;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.link-desc {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+@media (max-width: 768px) {
+  .footer-top {
+    flex-direction: column;
+    gap: 3rem;
+  }
+  .footer-links {
+    gap: 2.5rem;
+    flex-direction: column;
+  }
+}
