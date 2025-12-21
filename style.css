@@ -1,4 +1,4 @@
-/* style.css - Boundary X: Bluetooth Keypad Edition */
+/* style.css - Boundary X: Bluetooth Keypad Edition (Mobile Responsive Fixed) */
 
 :root {
   --primary: #000000;
@@ -38,9 +38,11 @@ header {
   position: sticky;
   top: 0;
   z-index: 100;
+  transition: padding 0.3s ease; /* 부드러운 전환 효과 추가 */
 }
-.title { font-size: 1.25rem; font-weight: 700; color: #FFFFFF; display: flex; align-items: center; gap: 12px; }
-.title img { height: 28px; width: auto; }
+.title { font-size: 1.25rem; font-weight: 700; color: #FFFFFF; display: flex; align-items: center; gap: 12px; transition: font-size 0.3s ease; }
+.title img { height: 28px; width: auto; transition: height 0.3s ease; } /* 이미지 크기 전환 효과 */
+
 .back-button {
   text-decoration: none; color: #FFFFFF; border: 1px solid #FFFFFF;
   font-size: 0.9rem; font-weight: 500; padding: 0.5rem 1.2rem;
@@ -49,12 +51,13 @@ header {
 .back-button:hover { background: #FFFFFF; color: #000000; }
 
 /* Main Layout */
-main { width: 100%; max-width: 600px; margin: 0 auto; padding: 3rem 1.5rem; flex: 1; }
+main { width: 100%; max-width: 600px; margin: 0 auto; padding: 3rem 1.5rem; flex: 1; transition: padding 0.3s ease; }
 .canvas-container, canvas { display: none; }
 .controls { display: flex; flex-direction: column; gap: 32px; }
 .control-group {
   background: var(--accent-grey); padding: 2rem;
   border-radius: var(--radius-card); border: 1px solid var(--border-color);
+  transition: padding 0.3s ease;
 }
 .control-group h3 {
   border-left: 6px solid #000000; padding-left: 1rem;
@@ -101,7 +104,7 @@ button {
 
 .keypad-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, 1fr); /* 3열로 균등 분할 (반응형의 핵심) */
     gap: 12px;
 }
 
@@ -117,6 +120,7 @@ button {
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 0px rgba(0,0,0,0.1);
+    width: 100%; /* 부모 그리드 셀에 가득 차게 설정 */
 }
 
 .key-button:active {
@@ -228,7 +232,9 @@ address {
   color: #666;
 }
 
+/* Mobile Responsive Adjustments */
 @media (max-width: 768px) {
+  /* Footer Layout Update */
   .footer-top {
     flex-direction: column;
     gap: 3rem;
@@ -237,4 +243,42 @@ address {
     gap: 2.5rem;
     flex-direction: column;
   }
+
+  /* 1. Header & Logo Resizing */
+  header {
+    padding: 0.8rem 1rem; /* 모바일 헤더 패딩 축소 */
+  }
+  
+  .title {
+    font-size: 1rem; /* 타이틀 폰트 축소 */
+  }
+  
+  .title img {
+    height: 20px; /* 로고 이미지 높이 축소 (28px -> 20px) */
+  }
+  
+  .back-button {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  /* 2. Main Layout Spacing (공간 확보) */
+  main {
+    padding: 2rem 1rem; /* 좌우 여백을 줄여 컨텐츠 공간 확보 */
+  }
+
+  .control-group {
+    padding: 1.5rem 1rem; /* 카드 내부 패딩을 줄여 버튼 공간 확보 */
+  }
+
+  /* 3. Keypad Resizing */
+  .keypad-grid {
+    gap: 8px; /* 버튼 사이 간격 축소 */
+  }
+
+  .key-button {
+    font-size: 1.2rem !important; /* 버튼 글씨 크기 축소 */
+    border-radius: 8px !important; /* 모서리 둥글기 약간 축소 */
+  }
 }
+
