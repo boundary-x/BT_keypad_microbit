@@ -1,283 +1,139 @@
-/* style.css - Boundary X: Bluetooth Keypad Edition (Mobile Responsive Fixed) */
+/**
+ * sketch.js
+ * Boundary X Bluetooth Keypad Logic
+ */
 
-:root {
-  --primary: #000000;
-  --primary-hover: #333333;
-  --accent-grey: #F8F9FA;
-  --border-color: #D1D5DB;
-  --bg-color: #FFFFFF;
-  --text-main: #111111;
-  --text-sub: #666666;
-  --danger: #EA4335;
-  --success: #137333;
+const UART_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+const UART_TX_CHARACTERISTIC_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+const UART_RX_CHARACTERISTIC_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+
+let bluetoothDevice = null;
+let rxCharacteristic = null;
+let isConnected = false;
+let bluetoothStatus = "연결 대기 중"; 
+
+function setup() {
+  noCanvas(); 
+  createBluetoothUI();
+  createKeypadUI(); // 키패드 생성 함수 호출
+}
+
+function createBluetoothUI() {
+  const statusElement = select("#bluetoothStatus");
+  if (statusElement) statusElement.html(`상태: ${bluetoothStatus}`);
+
+  const buttonContainer = select("#bluetooth-control-buttons");
+  if (buttonContainer) {
+    const connectButton = createButton("기기 연결").addClass("start-button");
+    connectButton.mousePressed(connectBluetooth);
+    buttonContainer.child(connectButton);
+
+    const disconnectButton = createButton("연결 해제").addClass("stop-button");
+    disconnectButton.mousePressed(disconnectBluetooth);
+    buttonContainer.child(disconnectButton);
+  }
+}
+
+// 1~12 키패드 생성 및 이벤트 연결
+function createKeypadUI() {
+    const keypadContainer = select("#keypad-container");
+    if (!keypadContainer) return;
+
+    // 1부터 12까지 버튼 생성
+    for (let i = 1; i <= 12; i++) {
+        let btn = createButton(String(i)); // 버튼 텍스트
+        btn.addClass("key-button");        // CSS 클래스 적용
+        
+        // 버튼 클릭(터치) 시 이벤트
+        btn.mousePressed(() => {
+            handleKeypadInput(i);
+        });
+
+        keypadContainer.child(btn);
+    }
+}
+
+// 키패드 입력 처리
+function handleKeypadInput(number) {
+    if (!isConnected) {
+        alert("먼저 마이크로비트와 연결해주세요.");
+        return;
+    }
+
+    const dataToSend = String(number);
+    sendBluetoothData(dataToSend);
+    
+    // UI 업데이트 (확인 창)
+    const display = select("#sentDataDisplay");
+    if (display) {
+        display.html(dataToSend);
+        // 시각적 효과 (깜빡임)
+        display.style("color", "#fff");
+        setTimeout(() => display.style("color", "#0f0"), 200);
+    }
+}
+
+// UI Color Update Logic
+function updateBluetoothStatusUI(type) {
+  const el = select("#bluetoothStatus");
+  if (el) {
+    el.removeClass("status-connected");
+    el.removeClass("status-error");
+    el.html(`상태: ${bluetoothStatus}`);
+
+    if (type === 'connected') {
+      el.addClass("status-connected");
+    } else if (type === 'error') {
+      el.addClass("status-error");
+    }
+  }
+}
+
+async function connectBluetooth() {
+  try {
+    bluetoothDevice = await navigator.bluetooth.requestDevice({
+      filters: [{ namePrefix: "BBC micro:bit" }],
+      optionalServices: [UART_SERVICE_UUID],
+    });
+    const server = await bluetoothDevice.gatt.connect();
+    const service = await server.getPrimaryService(UART_SERVICE_UUID);
+    rxCharacteristic = await service.getCharacteristic(UART_RX_CHARACTERISTIC_UUID);
+    isConnected = true;
+    
+    // Connected (Green)
+    bluetoothStatus = `${bluetoothDevice.name} 연결됨`;
+    updateBluetoothStatusUI('connected');
+    
+  } catch (error) {
+    console.error("Connection failed", error);
+    // Error (Red)
+    bluetoothStatus = "연결 실패 (다시 시도해주세요)";
+    updateBluetoothStatusUI('error');
+  }
+}
+
+function disconnectBluetooth() {
+  if (bluetoothDevice && bluetoothDevice.gatt.connected) {
+    bluetoothDevice.gatt.disconnect();
+  }
+  isConnected = false;
+  bluetoothDevice = null;
+  rxCharacteristic = null;
   
-  --radius-pill: 50px;
-  --radius-card: 16px;
-  --font-family: 'Pretendard', -apple-system, sans-serif;
+  // Default (Grey)
+  bluetoothStatus = "연결 해제됨";
+  updateBluetoothStatusUI('default');
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-family); }
-
-body {
-  background-color: var(--bg-color);
-  color: var(--text-main);
-  line-height: 1.6;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Header */
-header {
-  background: #000000;
-  border-bottom: 1px solid #333;
-  padding: 1rem 5vw;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  transition: padding 0.3s ease; /* 부드러운 전환 효과 추가 */
-}
-.title { font-size: 1.25rem; font-weight: 700; color: #FFFFFF; display: flex; align-items: center; gap: 12px; transition: font-size 0.3s ease; }
-.title img { height: 28px; width: auto; transition: height 0.3s ease; } /* 이미지 크기 전환 효과 */
-
-.back-button {
-  text-decoration: none; color: #FFFFFF; border: 1px solid #FFFFFF;
-  font-size: 0.9rem; font-weight: 500; padding: 0.5rem 1.2rem;
-  border-radius: var(--radius-pill); transition: all 0.2s;
-}
-.back-button:hover { background: #FFFFFF; color: #000000; }
-
-/* Main Layout */
-main { width: 100%; max-width: 600px; margin: 0 auto; padding: 3rem 1.5rem; flex: 1; transition: padding 0.3s ease; }
-.canvas-container, canvas { display: none; }
-.controls { display: flex; flex-direction: column; gap: 32px; }
-.control-group {
-  background: var(--accent-grey); padding: 2rem;
-  border-radius: var(--radius-card); border: 1px solid var(--border-color);
-  transition: padding 0.3s ease;
-}
-.control-group h3 {
-  border-left: 6px solid #000000; padding-left: 1rem;
-  font-size: 1.3rem; font-weight: 800; margin-bottom: 1rem; line-height: 1.1;
-}
-.control-group p { color: var(--text-sub); font-size: 0.95rem; margin-bottom: 1.5rem; }
-
-/* Buttons & Inputs */
-.button-group { display: flex; gap: 12px; flex-wrap: wrap; }
-button {
-  cursor: pointer; border: none; font-size: 1rem; font-weight: 600;
-  padding: 0.9rem 1.5rem; border-radius: var(--radius-pill); transition: all 0.2s;
-}
-.start-button { background-color: var(--primary); color: white; }
-.start-button:hover { background-color: var(--primary-hover); transform: translateY(-2px); }
-.stop-button { background-color: white; color: var(--danger); border: 1px solid var(--border-color); }
-.stop-button:hover { background-color: #FFF5F5; border-color: var(--danger); }
-#bluetooth-control-buttons button { flex: 1; }
-
-/* Status Box */
-#bluetoothStatus {
-  padding: 1rem; border-radius: var(--radius-card); text-align: center; font-weight: 700;
-  background-color: #F1F3F4; border: 1px solid var(--border-color); margin-bottom: 1rem;
-}
-.status-connected { background-color: #E6F4EA !important; color: var(--success) !important; border-color: var(--success) !important; }
-.status-error { background-color: #FCE8E6 !important; color: var(--danger) !important; border-color: var(--danger) !important; }
-
-/* --- Keypad UI --- */
-.display-screen {
-    background: #222;
-    color: #0f0;
-    padding: 1.5rem;
-    border-radius: 12px;
-    margin-bottom: 1.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-family: monospace;
-    font-size: 1.2rem;
-    box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
-}
-.display-screen .label { color: #888; font-size: 0.9rem; }
-.display-screen .value { font-weight: bold; font-size: 1.5rem; }
-
-.keypad-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr); /* 3열로 균등 분할 (반응형의 핵심) */
-    gap: 12px;
-}
-
-.key-button {
-    background: white;
-    border: 1px solid var(--border-color);
-    color: var(--text-main);
-    font-size: 1.5rem !important;
-    font-weight: 700;
-    aspect-ratio: 1.4 / 1;
-    border-radius: 12px !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 0px rgba(0,0,0,0.1);
-    width: 100%; /* 부모 그리드 셀에 가득 차게 설정 */
-}
-
-.key-button:active {
-    transform: translateY(4px);
-    box-shadow: none;
-    background: #eee;
-}
-
-/* Detailed Footer (Restored) */
-footer {
-  background-color: #000000;
-  color: #FFFFFF;
-  padding: 4rem 5vw 4rem;
-  border-top: 1px solid #222;
-  margin-top: auto;
-  font-size: 0.9rem;
-}
-
-.footer-container {
-  max-width: 1000px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-}
-
-.footer-top {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 4rem;
-}
-
-.footer-info {
-  flex: 1;
-  min-width: 280px;
-  display: flex;
-  flex-direction: column;
-}
-
-.footer-logo {
-  font-size: 1.2rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-  color: #FFFFFF;
-}
-
-.slogan {
-  font-size: 0.95rem;
-  color: #CCCCCC;
-  font-weight: 400;
-  font-style: normal;
-  margin-bottom: 1.5rem;
-  line-height: 1.5;
-  word-break: keep-all;
-}
-
-address {
-  font-style: normal;
-  color: #888;
-  line-height: 1.6;
-}
-
-.copyright {
-  margin-top: 0.8rem;
-  font-size: 0.8rem;
-  color: #666;
-}
-
-.footer-links {
-  display: flex;
-  gap: 4rem;
-  flex-wrap: wrap;
-}
-
-.link-column h4 {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #FFFFFF;
-  margin-bottom: 1.2rem;
-}
-
-.link-column ul {
-  list-style: none;
-  padding: 0;
-}
-
-.link-column li {
-  margin-bottom: 1.2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.link-column a {
-  text-decoration: none;
-  color: #CCCCCC;
-  font-weight: 500;
-  transition: color 0.2s;
-}
-
-.link-column a:hover {
-  color: #FFFFFF;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-
-.link-desc {
-  font-size: 0.8rem;
-  color: #666;
-}
-
-/* Mobile Responsive Adjustments */
-@media (max-width: 768px) {
-  /* Footer Layout Update */
-  .footer-top {
-    flex-direction: column;
-    gap: 3rem;
-  }
-  .footer-links {
-    gap: 2.5rem;
-    flex-direction: column;
-  }
-
-  /* 1. Header & Logo Resizing */
-  header {
-    padding: 0.8rem 1rem; /* 모바일 헤더 패딩 축소 */
-  }
-  
-  .title {
-    font-size: 1rem; /* 타이틀 폰트 축소 */
-  }
-  
-  .title img {
-    height: 20px; /* 로고 이미지 높이 축소 (28px -> 20px) */
-  }
-  
-  .back-button {
-    font-size: 0.8rem;
-    padding: 0.4rem 0.8rem;
-  }
-
-  /* 2. Main Layout Spacing (공간 확보) */
-  main {
-    padding: 2rem 1rem; /* 좌우 여백을 줄여 컨텐츠 공간 확보 */
-  }
-
-  .control-group {
-    padding: 1.5rem 1rem; /* 카드 내부 패딩을 줄여 버튼 공간 확보 */
-  }
-
-  /* 3. Keypad Resizing */
-  .keypad-grid {
-    gap: 8px; /* 버튼 사이 간격 축소 */
-  }
-
-  .key-button {
-    font-size: 1.2rem !important; /* 버튼 글씨 크기 축소 */
-    border-radius: 8px !important; /* 모서리 둥글기 약간 축소 */
+async function sendBluetoothData(data) {
+  if (!rxCharacteristic || !isConnected) return;
+  try {
+    const encoder = new TextEncoder();
+    // 마이크로비트는 줄바꿈(\n)이나 구분자가 있어야 데이터를 끊어서 인식하는 경우가 많으므로 \n 추가
+    await rxCharacteristic.writeValue(encoder.encode(`${data}\n`));
+    console.log("Sent:", data);
+  } catch (e) {
+    console.error("Send error:", e);
+    alert("데이터 전송 중 오류가 발생했습니다.");
   }
 }
