@@ -1,6 +1,6 @@
 /**
  * sketch.js
- * Boundary X Bluetooth Keypad Logic (Micro:bit Compatible)
+ * Boundary X Bluetooth Keypad Logic
  */
 
 // Bluetooth UUIDs for micro:bit UART service
@@ -34,7 +34,6 @@ function createBluetoothUI() {
 
   const buttonContainer = select("#bluetooth-control-buttons");
   if (buttonContainer) {
-    // 디자인 시스템 클래스 적용 (.start-button -> Black Pill)
     const connectButton = createButton("기기 연결").addClass("start-button");
     connectButton.mousePressed(connectBluetooth);
     buttonContainer.child(connectButton);
@@ -54,7 +53,7 @@ function createKeypadUI() {
   if (keypadContainer) {
     for (let i = 1; i <= 9; i++) {
       let btn = createButton(String(i)); 
-      btn.addClass("keypad-btn"); // style.css의 새 스타일 적용
+      btn.addClass("keypad-btn"); 
       
       btn.mousePressed(() => {
         handleKeypadPress(i);
@@ -72,7 +71,7 @@ function handleKeypadPress(number) {
   const dataToSend = String(number);
   
   if (navigator.vibrate) {
-    navigator.vibrate(30); // 햅틱 피드백
+    navigator.vibrate(30); 
   }
 
   sendBluetoothData(dataToSend);
@@ -102,13 +101,11 @@ function displaySentData() {
 function updateBluetoothStatusUI(type) {
   const el = select("#bluetoothStatus");
   if (el) {
-    // 기존 클래스 제거
     el.removeClass("status-connected");
     el.removeClass("status-error");
     
     el.html(`상태: ${bluetoothStatus}`);
 
-    // 상태별 색상 적용
     if (type === 'connected') {
       el.addClass("status-connected");
     } else if (type === 'error') {
@@ -133,11 +130,11 @@ async function connectBluetooth() {
 
     isConnected = true;
     bluetoothStatus = `${bluetoothDevice.name} 연결됨`;
-    updateBluetoothStatusUI('connected'); // 녹색
+    updateBluetoothStatusUI('connected');
   } catch (error) {
     console.error("Bluetooth connection failed:", error);
     bluetoothStatus = "연결 실패 (다시 시도해주세요)";
-    updateBluetoothStatusUI('error'); // 빨강
+    updateBluetoothStatusUI('error');
   }
 }
 
@@ -153,11 +150,13 @@ function disconnectBluetooth() {
   rxCharacteristic = null;
   
   bluetoothStatus = "연결 해제됨";
-  updateBluetoothStatusUI('default'); // 회색
+  updateBluetoothStatusUI('default');
 }
 
 /**
- * 데이터 전송 함수 (수정됨: \n 추가)
+ * 데이터 전송 함수 (최종 수정됨)
+ * 1. 줄바꿈(\n) 추가
+ * 2. writeValueWithoutResponse 사용
  */
 async function sendBluetoothData(data) {
   if (!rxCharacteristic || !isConnected) {
@@ -168,14 +167,21 @@ async function sendBluetoothData(data) {
   try {
     const encoder = new TextEncoder();
     
-    // [분석 결과 반영] 음성인식 예제처럼 데이터 끝에 줄바꿈 문자(\n) 추가
-    // 이렇게 해야 마이크로비트가 데이터 수신을 완료했다고 인식합니다.
+    // [중요] 마이크로비트 명령 인식용 줄바꿈 문자 추가
     const dataWithDelimiter = `${data}\n`;
-    
     const encodedData = encoder.encode(dataWithDelimiter); 
-    await rxCharacteristic.writeValue(encodedData);
-    console.log("Sent with newline:", dataWithDelimiter);
+
+    // [중요] GATT operation not permitted 에러 방지
+    // 마이크로비트 UART는 주로 'Write Without Response' 속성을 사용함
+    if (rxCharacteristic.writeValueWithoutResponse) {
+        await rxCharacteristic.writeValueWithoutResponse(encodedData);
+    } else {
+        await rxCharacteristic.writeValue(encodedData);
+    }
+    
+    console.log("Sent successfully:", dataWithDelimiter);
   } catch (error) {
     console.error("Error sending data:", error);
+    alert("데이터 전송 중 오류가 발생했습니다: " + error);
   }
 }
