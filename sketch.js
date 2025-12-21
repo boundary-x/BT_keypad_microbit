@@ -123,7 +123,6 @@ function updateBluetoothStatusUI(type) {
 async function connectBluetooth() {
   try {
     bluetoothDevice = await navigator.bluetooth.requestDevice({
-      // BBC micro:bit 이름만 검색 (필터 유지)
       filters: [{ namePrefix: "BBC micro:bit" }],
       optionalServices: [UART_SERVICE_UUID],
     });
@@ -158,7 +157,7 @@ function disconnectBluetooth() {
 }
 
 /**
- * 데이터 전송 함수 (라인 엔딩 \n 추가됨)
+ * 데이터 전송 함수 (수정됨: \n 추가)
  */
 async function sendBluetoothData(data) {
   if (!rxCharacteristic || !isConnected) {
@@ -169,12 +168,13 @@ async function sendBluetoothData(data) {
   try {
     const encoder = new TextEncoder();
     
-    // [라인 엔딩 추가] 데이터 뒤에 \n을 붙여서 전송
+    // [분석 결과 반영] 음성인식 예제처럼 데이터 끝에 줄바꿈 문자(\n) 추가
+    // 이렇게 해야 마이크로비트가 데이터 수신을 완료했다고 인식합니다.
     const dataWithDelimiter = `${data}\n`;
     
     const encodedData = encoder.encode(dataWithDelimiter); 
     await rxCharacteristic.writeValue(encodedData);
-    console.log("Sent:", dataWithDelimiter);
+    console.log("Sent with newline:", dataWithDelimiter);
   } catch (error) {
     console.error("Error sending data:", error);
   }
