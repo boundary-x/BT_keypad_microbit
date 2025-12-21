@@ -1,6 +1,6 @@
 /**
  * sketch.js
- * Boundary X Bluetooth Keypad Logic
+ * Boundary X Bluetooth Keypad Logic (Final Fix)
  */
 
 // Bluetooth UUIDs for micro:bit UART service
@@ -103,7 +103,6 @@ function updateBluetoothStatusUI(type) {
   if (el) {
     el.removeClass("status-connected");
     el.removeClass("status-error");
-    
     el.html(`상태: ${bluetoothStatus}`);
 
     if (type === 'connected') {
@@ -132,7 +131,7 @@ async function connectBluetooth() {
     bluetoothStatus = `${bluetoothDevice.name} 연결됨`;
     updateBluetoothStatusUI('connected');
   } catch (error) {
-    console.error("Bluetooth connection failed:", error);
+    console.error("Connection failed", error);
     bluetoothStatus = "연결 실패 (다시 시도해주세요)";
     updateBluetoothStatusUI('error');
   }
@@ -154,9 +153,7 @@ function disconnectBluetooth() {
 }
 
 /**
- * 데이터 전송 함수 (최종 수정됨)
- * 1. 줄바꿈(\n) 추가
- * 2. writeValueWithoutResponse 사용
+ * 데이터 전송 함수 (수정됨)
  */
 async function sendBluetoothData(data) {
   if (!rxCharacteristic || !isConnected) {
@@ -167,12 +164,11 @@ async function sendBluetoothData(data) {
   try {
     const encoder = new TextEncoder();
     
-    // [중요] 마이크로비트 명령 인식용 줄바꿈 문자 추가
+    // [핵심 해결책] 마이크로비트가 수신 이벤트를 트리거하도록 줄바꿈 문자(\n) 추가
     const dataWithDelimiter = `${data}\n`;
     const encodedData = encoder.encode(dataWithDelimiter); 
 
-    // [중요] GATT operation not permitted 에러 방지
-    // 마이크로비트 UART는 주로 'Write Without Response' 속성을 사용함
+    // [에러 방지] 'GATT operation not permitted' 에러를 피하기 위해 WithoutResponse 사용
     if (rxCharacteristic.writeValueWithoutResponse) {
         await rxCharacteristic.writeValueWithoutResponse(encodedData);
     } else {
@@ -182,6 +178,6 @@ async function sendBluetoothData(data) {
     console.log("Sent successfully:", dataWithDelimiter);
   } catch (error) {
     console.error("Error sending data:", error);
-    alert("데이터 전송 중 오류가 발생했습니다: " + error);
+    // 에러가 나더라도 사용자가 계속 시도할 수 있도록 alert는 제거하거나 console에만 표시
   }
 }
